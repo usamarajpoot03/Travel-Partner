@@ -1,8 +1,13 @@
 const express = require("express");
 const app = express();
-
+const handleBars = require("express-handlebars");
+const fortune = require("./libs/fortune");
 // view engine
-app.set("view engine", "pug");
+app.engine("handlebars", handleBars({ defaultLayout: "main" }));
+app.set("view engine", "handlebars");
+
+// avoid sending server info
+app.disable("x-powered-by");
 
 // static content
 app.use(express.static(__dirname + "/public"));
@@ -10,34 +15,55 @@ app.use(express.static(__dirname + "/public"));
 // port settings
 app.set("port", process.env.PORT || 3000);
 
+// test detection middleware
+app.use((req, res, next) => {
+  res.locals.showTests =
+    req.get("env") != "production" && req.query.test == "1";
+  next();
+});
+
 // routes
 app.get("/", function (req, res) {
   res.render("home");
 });
 
-var fortunes = [
-  "Conquer your fears or they will conquer you.",
-  "Rivers need springs.",
-  "Do not fear what you don't know.",
-  "You will have a pleasant surprise.",
-  "Whenever possible, keep it simple.",
-];
-
 app.get("/about", function (req, res) {
-  var randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-  res.render("about", { fortune: randomFortune });
+  res.render("about", {
+    fortune: fortune.getFortune(),
+    pageTestScript: "/qa/tests-about.js",
+  });
 });
 
-// error handlers
-app.use(function (req, res) {
-  res.status(404);
-  res.render("404");
+app.get("/tours/hood-river", function (req, res) {
+  res.render("tours/hood-river");
+});
+
+app.get("/tours/request-group-rate", function (req, res) {
+  res.render("tours/request-group-rate");
+});
+
+// respond with headers
+app.get("/headers", function (req, res) {
+  res.set("Content-Type", "text/plain");
+  var s = "";
+  for (var name in req.headers) s += name + ": " + req.headers[name] + "\n";
+  res.send(s);
+});
+
+// respond with headers
+app.get("/redirect", function (req, res) {
+  res.redirect(301, "/headers");
 });
 
 app.use(function (err, req, res, next) {
   console.error(err.stack);
   res.status(500);
   res.render("500");
+});
+// error handlers
+app.use(function (req, res) {
+  res.status(404);
+  res.render("404");
 });
 
 app.listen(app.get("port"), function () {
