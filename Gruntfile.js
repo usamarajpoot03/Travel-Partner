@@ -8,6 +8,9 @@ module.exports = function (grunt) {
     jshint: {
       app: ["server.js", "public/js/**/*.js", "lib/**/*.js"],
       qa: ["Gruntfile.js", "public/qa/**/*.js", "qa/**/*.js"],
+      options: {
+        esversion: 6,
+      },
     },
   });
   // register tasks
