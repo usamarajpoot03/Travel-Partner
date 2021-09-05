@@ -3,8 +3,13 @@ const app = express();
 const handleBars = require("express-handlebars");
 const bodyParser = require("body-parser");
 var formidable = require("formidable");
-var jqupload = require("jquery-file-upload-middleware");
 const fortune = require("./libs/fortune");
+const credentials = require("./credentials");
+const cookieParser = require("cookie-parser");
+
+// externalization cookies
+app.use(cookieParser(credentials.cookieSecret));
+
 // view engine
 app.engine(
   "handlebars",
@@ -110,6 +115,23 @@ app.get("/headers", function (req, res) {
 // respond with headers
 app.get("/redirect", function (req, res) {
   res.redirect(301, "/headers");
+});
+
+// send dummy cookie
+app.get("/cookies", function (req, res) {
+  // signed will take precedence
+  res.cookie("user-id-signed", "user123_abc", { signed: true, httpOnly: true });
+  res.cookie("user-id", "user123_abc");
+  res.send();
+});
+
+// send dummy cookie
+app.get("/cookies-get", function (req, res) {
+  const cookiesData = {};
+  cookiesData.simple = req.cookies;
+  cookiesData.signed = req.signedCookies;
+  cookiesData.secret = req.secret;
+  res.send(cookiesData);
 });
 
 app.use(function (err, req, res, next) {
