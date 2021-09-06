@@ -30,16 +30,16 @@ app.use(function (req, res, next) {
       try {
         // attempt to use Express error route
         next(err);
-      } catch (err) {
+      } catch (err1) {
         // if Express error route failed, try
         // plain Node response
-        console.error("Express error mechanism failed.\n", err.stack);
+        console.error("Express error mechanism failed.\n", err1.stack);
         res.statusCode = 500;
         res.setHeader("content-type", "text/plain");
         res.end("Server error.");
       }
-    } catch (err) {
-      console.error("Unable to send 500 response.\n", err.stack);
+    } catch (err2) {
+      console.error("Unable to send 500 response.\n", err2.stack);
     }
   });
   // add the request and response objects to the domain
