@@ -5,6 +5,26 @@ const bodyParser = require("body-parser");
 var formidable = require("formidable");
 const fortune = require("./libs/fortune");
 const credentials = require("./credentials");
+// var emailService = require("./libs/email.js")(credentials);
+// emailService.send('joecustomer@gmail.com', 'Hood River tours on sale today!',
+//  'Get \'em while they\'re hot!');
+
+console.log("xx", "here");
+// Logging setup
+switch (app.get("env")) {
+  case "development":
+    // compact, colorful dev logging
+    app.use(require("morgan")("dev"));
+    break;
+  case "production":
+    // module 'express-logger' supports daily log rotation
+    app.use(
+      require("express-logger")({
+        path: __dirname + "/log/requests.log",
+      })
+    );
+    break;
+}
 
 // externalization cookies
 app.use(require("cookie-parser")(credentials.cookieSecret));
@@ -53,6 +73,13 @@ app.use(function (req, res, next) {
   next();
 });
 
+// for cluster mode logs
+app.use(function (req, res, next) {
+  var cluster = require("cluster");
+  if (cluster.isWorker)
+    console.log("Worker %d received request", cluster.worker.id);
+  next();
+});
 // routes
 app.get("/", function (req, res) {
   res.render("home");
@@ -190,6 +217,17 @@ app.get("/sessions", function (req, res) {
   res.send(sessionsData);
 });
 
+// Intertional failing
+app.get("/fail", function (req, res) {
+  throw new Error("Nope!");
+});
+
+app.get("/epic-fail", function (req, res) {
+  process.nextTick(function () {
+    throw new Error("Destored Everything!");
+  });
+});
+
 app.use(function (err, req, res, next) {
   console.error(err.stack);
   res.status(500);
@@ -201,6 +239,18 @@ app.use(function (req, res) {
   res.render("404");
 });
 
-app.listen(app.get("port"), function () {
-  console.log(`App is listening to the port ${app.get("port")}`);
-});
+function startServer() {
+  app.listen(app.get("port"), function () {
+    console.log(
+      `App is listening to the port ${app.get("port")} & env is ${app.get(
+        "env"
+      )}`
+    );
+  });
+}
+
+if (require.main === module) {
+  startServer();
+} else {
+  module.exports = startServer;
+}
