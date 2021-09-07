@@ -52,6 +52,7 @@ app.use(function (req, res, next) {
   // execute the rest of the request chain in the domain
   domain.run(next);
 });
+
 // Logging setup
 switch (app.get("env")) {
   case "development":
@@ -71,6 +72,7 @@ switch (app.get("env")) {
 // externalization cookies
 app.use(require("cookie-parser")(credentials.cookieSecret));
 const session = require("express-session");
+
 var MongoDBStore = require("connect-mongodb-session")(session);
 var store = new MongoDBStore({
   uri: credentials.mongo.development.connectionString,
@@ -79,6 +81,7 @@ var store = new MongoDBStore({
 store.on("error", function (error) {
   console.log(error);
 });
+
 app.use(
   require("express-session")({
     secret: "This is a secret",
@@ -86,9 +89,6 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     },
     store: store,
-    // Boilerplate options, see:
-    // * https://www.npmjs.com/package/express-session#resave
-    // * https://www.npmjs.com/package/express-session#saveuninitialized
     resave: true,
     saveUninitialized: true,
   })
@@ -149,181 +149,6 @@ app.use(function (req, res, next) {
 
 // all routes defined here
 require("./routes.js")(app);
-
-// newletter
-app.get("/newsletter", function (req, res) {
-  // we will learn about CSRF later...for now, we just
-  // provide a dummy value
-  res.render("newsletter", { csrf: "CSRF token goes here" });
-});
-
-app.post("/newsletter", function (req, res) {
-  var name = req.body.name || "",
-    email = req.body.email || "";
-  // input validation
-  if (!email.match(VALID_EMAIL_REGEX)) {
-    if (req.xhr) return res.json({ error: "Invalid name email address." });
-    req.session.flash = {
-      type: "danger",
-      intro: "Validation error!",
-      message: "The email address you entered was not valid.",
-    };
-    return res.redirect(303, "/newsletter/archive");
-  }
-  new NewsletterSignup({ name: name, email: email }).save(function (err) {
-    if (err) {
-      if (req.xhr) return res.json({ error: "Database error." });
-      req.session.flash = {
-        type: "danger",
-        intro: "Database error!",
-        message: "There was a database error; please try again later.",
-      };
-      return res.redirect(303, "/newsletter/archive");
-    }
-    if (req.xhr) return res.json({ success: true });
-    req.session.flash = {
-      type: "success",
-      intro: "Thank you!",
-      message: "You have now been signed up for the newsletter.",
-    };
-    return res.redirect(303, "/newsletter/archive");
-  });
-});
-
-var Vacation = require("./database/models/vacation");
-
-// vacations
-app.get("/vacations", function (req, res) {
-  db.Vacation.find({ available: true }, function (err, vacations) {
-    var currency = req.session.currency || "USD";
-    var context = {
-      currency: currency,
-      vacations: vacations.map(function (vacation) {
-        return {
-          sku: vacation.sku,
-          name: vacation.name,
-          description: vacation.description,
-          inSeason: vacation.inSeason,
-          price: convertFromUSD(vacation.priceInCents / 100, currency),
-          qty: vacation.qty,
-        };
-      }),
-    };
-    switch (currency) {
-      case "USD":
-        context.currencyUSD = "selected";
-        break;
-      case "GBP":
-        context.currencyGBP = "selected";
-        break;
-      case "BTC":
-        context.currencyBTC = "selected";
-        break;
-    }
-    res.render("vacations", context);
-  });
-});
-
-app.get("/notify-me-when-in-season", function (req, res) {
-  res.render("notify-me-when-in-season", { sku: req.query.sku });
-});
-
-app.post("/notify-me-when-in-season", function (req, res) {
-  db.VacationInSeasonListener.update(
-    { email: req.body.email },
-    { $push: { skus: req.body.sku } },
-    { upsert: true },
-    function (err) {
-      if (err) {
-        console.error(err.stack);
-        req.session.flash = {
-          type: "danger",
-          intro: "Ooops!",
-          message: "There was an error processing your request.",
-        };
-        return res.redirect(303, "/vacations");
-      }
-      req.session.flash = {
-        type: "success",
-        intro: "Thank you!",
-        message: "You will be notified when this vacation is in season.",
-      };
-      return res.redirect(303, "/vacations");
-    }
-  );
-});
-
-app.get("/set-currency/:currency", function (req, res) {
-  req.session.currency = req.params.currency;
-  return res.redirect(303, "/vacations");
-});
-function convertFromUSD(value, currency) {
-  switch (currency) {
-    case "USD":
-      return value * 1;
-    case "GBP":
-      return value * 0.6;
-    case "BTC":
-      return value * 0.0023707918444761;
-    default:
-      return NaN;
-  }
-}
-
-// contest
-app.get("/contest/vacation-photo", function (req, res) {
-  var now = new Date();
-  res.render("contest/vacation-photo", {
-    year: now.getFullYear(),
-    month: now.getMonth(),
-  });
-});
-
-app.post("/contest/vacation-photo/:year/:month", function (req, res) {
-  var form = new formidable.IncomingForm();
-  form.parse(req, function (err, fields, files) {
-    if (err) return res.redirect(303, "/error");
-    if (err) {
-      res.session.flash = {
-        type: "danger",
-        intro: "Oops!",
-        message:
-          "There was an error processing your submission. " +
-          "Pelase try again.",
-      };
-      return res.redirect(303, "/contest/vacation-photo");
-    }
-    var photo = files.photo;
-    var dir = vacationPhotoDir + "/" + Date.now();
-    var path = dir + "/" + photo.name;
-    fs.mkdirSync(dir);
-    fs.renameSync(photo.path, dir + "/" + photo.name);
-    saveContestEntry(
-      "vacation-photo",
-      fields.email,
-      req.params.year,
-      req.params.month,
-      path
-    );
-    req.session.flash = {
-      type: "success",
-      intro: "Good luck!",
-      message: "You have been entered into the contest.",
-    };
-    return res.redirect(303, "/contest/vacation-photo/entries");
-  });
-});
-
-// form submission
-app.post("/process", function (req, res) {
-  if (req.xhr || req.accepts("json,html") === "json") {
-    // if there were an error, we would send { error: 'error description' }
-    res.send({ success: true });
-  } else {
-    // if there were an error, we would redirect to an error page
-    res.redirect(303, "/thank-you");
-  }
-});
 
 app.use(function (err, req, res, next) {
   console.error(err.stack);
