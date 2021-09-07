@@ -3,9 +3,10 @@ const app = express();
 const handleBars = require("express-handlebars");
 const bodyParser = require("body-parser");
 var formidable = require("formidable");
-const fortune = require("./libs/fortune");
 const credentials = require("./credentials");
 const db = require("./database");
+var fs = require("fs");
+
 // var sessionStore = new MongoSessionStore(db.mongoose.connection);
 
 // var emailService = require("./libs/email.js")(credentials);
@@ -145,26 +146,9 @@ app.use(function (req, res, next) {
     console.log("Worker %d received request", cluster.worker.id);
   next();
 });
-// routes
-app.get("/", function (req, res) {
-  res.render("home");
-});
 
-app.get("/about", function (req, res) {
-  res.render("about", {
-    fortune: fortune.getFortune(),
-    pageTestScript: "/qa/tests-about.js",
-  });
-});
-
-// tour routes
-app.get("/tours/hood-river", function (req, res) {
-  res.render("tours/hood-river");
-});
-
-app.get("/tours/request-group-rate", function (req, res) {
-  res.render("tours/request-group-rate");
-});
+// all routes defined here
+require("./routes.js")(app);
 
 // newletter
 app.get("/newsletter", function (req, res) {
@@ -341,67 +325,12 @@ app.post("/process", function (req, res) {
   }
 });
 
-// respond with headers
-app.get("/headers", function (req, res) {
-  res.set("Content-Type", "text/plain");
-  var s = "";
-  for (var name in req.headers) s += name + ": " + req.headers[name] + "\n";
-  res.send(s);
-});
-
-// respond with headers
-app.get("/redirect", function (req, res) {
-  res.redirect(301, "/headers");
-});
-
-// send dummy cookie
-app.get("/cookies", function (req, res) {
-  // signed will take precedence
-  res.cookie("user-id-signed", "user123_abc", { signed: true, httpOnly: true });
-  res.cookie("user-id", "user123_abc");
-  res.send();
-});
-
-// send dummy cookie
-app.get("/cookies-get", function (req, res) {
-  const cookiesData = {};
-  cookiesData.simple = req.cookies;
-  cookiesData.signed = req.signedCookies;
-  cookiesData.secret = req.secret;
-  res.send(cookiesData);
-});
-
-let userNumber = 1;
-
-app.get("/sessions", function (req, res) {
-  console.log(req.session);
-  const sessionsData = {};
-  if (!req.session.userId) {
-    req.session.userId = userNumber;
-    userNumber++;
-  }
-  console.log(req.session);
-
-  sessionsData.session = req.session;
-  res.send(sessionsData);
-});
-
-// Intertional failing
-app.get("/fail", function (req, res) {
-  throw new Error("Nope!");
-});
-
-app.get("/epic-fail", function (req, res) {
-  process.nextTick(function () {
-    throw new Error("Destored Everything!");
-  });
-});
-
 app.use(function (err, req, res, next) {
   console.error(err.stack);
   res.status(500);
   res.render("500");
 });
+
 // error handlers
 app.use(function (req, res) {
   res.status(404);
