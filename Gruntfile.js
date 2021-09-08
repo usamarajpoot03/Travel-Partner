@@ -22,7 +22,7 @@ module.exports = function (grunt) {
           clearCacheFilter: (key) => true, // Optionally defines which files should keep in cache
           noFail: false, // Optionally set to not fail on failed tests (will still fail on other errors)
         },
-        src: ["qa/tests-stress.js"],
+        src: ["qa/tests-stress.js", "qa/tests-api.js"],
       },
     },
   });

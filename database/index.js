@@ -2,6 +2,7 @@ var mongoose = require("mongoose");
 var credentials = require("../credentials");
 const vacationSchema = require("./models/vacation");
 const vacationInSeasonListenerSchema = require("./models/vacationInSeasonListener");
+const attractionSchema = require("./models/attraction");
 var opts = {
   //   server: {
   //     socketOptions: { keepAlive: 1 },
@@ -23,9 +24,12 @@ var VacationInSeasonListener = mongoose.model(
   "VacationInSeasonListener",
   vacationInSeasonListenerSchema
 );
+var Attraction = mongoose.model("Attraction", attractionSchema);
+
 const db = {};
 db.mongoose = mongoose;
 db.Vacation = Vacation;
 db.VacationInSeasonListener = VacationInSeasonListener;
+db.Attraction = Attraction;
 
 module.exports = db;

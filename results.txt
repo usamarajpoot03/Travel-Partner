@@ -1,8 +1,12 @@
 
 [0m[0m
 [0m  Stress tests[0m
-  [32m  [32m✔[39m[0m[90m Homepage should handle 1000 requests in 1 second[0m[31m (817ms)[0m
+  [32m  [32m✔[39m[0m[90m Homepage should handle 1000 requests in 1 second[0m[31m (281ms)[0m
+
+[0m  API tests[0m
+  [32m  [32m✔[39m[0m[90m should be able to add an attraction[0m[31m (519ms)[0m
+  [32m  [32m✔[39m[0m[90m should be able to retrieve an attraction[0m[31m (1425ms)[0m
 
 
-[92m [0m[32m 1 passing[0m[90m (828ms)[0m
+[92m [0m[32m 3 passing[0m[90m (2s)[0m
 
