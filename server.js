@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const https = require("https");
 const handleBars = require("express-handlebars");
 const bodyParser = require("body-parser");
 var formidable = require("formidable");
@@ -72,6 +73,7 @@ switch (app.get("env")) {
 // externalization cookies
 app.use(require("cookie-parser")(credentials.cookieSecret));
 const session = require("express-session");
+const path = require("path");
 
 var MongoDBStore = require("connect-mongodb-session")(session);
 var store = new MongoDBStore({
@@ -227,8 +229,13 @@ app.use(function (req, res) {
   res.render("404");
 });
 
+const httpsOptions = {
+  key: fs.readFileSync(path.resolve(__dirname + "/ssl/localhost.key")),
+  cert: fs.readFileSync(path.resolve(__dirname + "/ssl/localhost.cert")),
+};
+
 function startServer() {
-  app.listen(app.get("port"), function () {
+  https.createServer(httpsOptions, app).listen(app.get("port"), function () {
     console.log(
       `App is listening to the port ${app.get("port")} & env is ${app.get(
         "env"
