@@ -235,7 +235,8 @@ const httpsOptions = {
 };
 
 function startServer() {
-  https.createServer(httpsOptions, app).listen(app.get("port"), function () {
+  // https.createServer(httpsOptions, app).listem
+  app.listen(app.get("port"), function () {
     console.log(
       `App is listening to the port ${app.get("port")} & env is ${app.get(
         "env"
