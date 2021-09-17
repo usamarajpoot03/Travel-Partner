@@ -13,7 +13,7 @@ switch ("development") {
     mongoose.connect(credentials.mongo.development.connectionString, opts);
     break;
   case "production":
-    mongoose.connect(credentials.mongo.production.connectionString, opts);
+    mongoose.connect(process.env.connectionString, opts);
     break;
   default:
     throw new Error("Unknown execution environment: " + process.env.NODE_ENV);
